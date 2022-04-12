@@ -1,5 +1,8 @@
 const mongodb = require('mongodb');
+var dotenv = require('dotenv');
+
+require('dotenv').config()
 const MongoClient = mongodb.MongoClient;
 const dbName = 'users';
-const dburl=`mongodb+srv://Jyothsna:Jyothsna123@cluster0.b0dyt.mongodb.net/test/${dbName}`;
+const dburl = process.env.MONGO_URL;
 module.exports = {MongoClient,dburl,mongodb}
