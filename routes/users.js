@@ -24,13 +24,15 @@ axios.get(url).then(res=>{
     
     $('._25b18c').each((id,ele)=>{
         price = $(ele).children('div').first().text();
+        price = price.substring(1, price.length);
         MRP = $(ele).children('._27UcVY').text();
-        
+        MRP = MRP.substring(1,MRP.length);
+
         if(array[id]){
-        (array[id])['OfferPrice'] = price;
-        (array[id])['MRP']= MRP;
+        (array[id])['OfferPrice'] = price && MRP ? price : '6,999';
+        (array[id])['MRP']= MRP && price ? MRP : '7,999';
         }
-        // console.log({price,id,MRP});
+        
     })
     $(".CXW8mj").each((id,ele)=>{
         image = $(ele).children('img').attr('src');
@@ -82,12 +84,12 @@ axios.get(snapdealurl).then(res=>{
         
         // console.log(OfferPrice,MRP,id);
         if(watches[id]){
-            (watches[id])['OfferPrice'] = OfferPrice;
+            (watches[id])['OfferPrice'] = OfferPrice && MRP[1] ? OfferPrice : '1,099';
             mrp=[price];
             // console.log(mrp);
              MRP=mrp[0].split(" ");
             //  console.log(MRP);
-             (watches[id])['MRP'] = MRP[1]}
+             (watches[id])['MRP'] = OfferPrice && MRP[1] ? MRP[1] : '1,999'}
         
     })
 
@@ -103,12 +105,14 @@ router.post('/additem',async (req,res)=>{
     // console.log("deleted");
     try{
         array.map((item,i)=>{
-            console.log(item);
+            // console.log(item);
             let document = db.collection('webscraping').insertOne(item);
             // console.log(document);
         })
+        // console.log(watches);
         watches.map((watch,i)=>{
             let document = db.collection('webscraping').insertOne(watch);
+            // console.log(document);
         })
     
     res.json({
@@ -129,7 +133,6 @@ router.get('/getitems',async (req, res)=>{
     const client = await MongoClient.connect(dburl);
     const db = await client.db("users");
     const list = await db.collection("webscraping").find().toArray();
-    // console.log(list);
     res.json({
         statuscode : 200,
         items : list
@@ -199,12 +202,7 @@ router.post('/addtocart',async (req, res) => {
     const db = await client.db("users");
     const item = await db.collection('webscraping').findOne({id:req.body.id});
     let priceArr;
-    if(item.producttype === "Mobile"){
-    let priceint = item.OfferPrice.slice(1, item.OfferPrice.length)
-      priceArr= priceint.split(',');}
-    else{
-        priceArr= item.OfferPrice.split(',') 
-    }
+    priceArr= item.OfferPrice.split(',');
     let price = priceArr.join('');
     const totPrice = Number(price)*Number(req.body.quantity);
     // console.log(item);
@@ -221,8 +219,7 @@ router.put('/updatequantity',async (req, res)=>{
     const client = await MongoClient.connect(dburl);
     const db = await client.db("users");
     const item = await db.collection('Cart').findOne({id:req.body.id});
-    let priceint = item.OfferPrice.slice(1, item.OfferPrice.length)
-     let priceArr= priceint.split(',');
+     let priceArr= item.OfferPrice.split(',');
     let price = priceArr.join('');
     const totPrice = Number(price)*Number(req.body.quantity);
     if(item){
@@ -241,9 +238,16 @@ router.get('/getcartitems', async (req, res) => {
     const client = await MongoClient.connect(dburl);
     const db = await client.db("users");
     const cart = await db.collection('Cart').find().toArray();
+    let total = 0;
+    cart.forEach((item) => { 
+        console.log(item, 'cart');
+        let priceArr = item.OfferPrice.split(',');
+        price = Number(priceArr.join('')) * item.quantity;
+        total = total + price})
     res.json({
         statuscode : 200,
-        cartitems : cart
+        cartitems : cart,
+        totalPrice: total,
     })
 })
 
@@ -251,12 +255,9 @@ router.get('/getcartitems', async (req, res) => {
 router.delete('/deletefromcart/:id', async (req, res) => {
     const client = await MongoClient.connect(dburl);
     const db = await client.db("users");
-    // console.log({id:req.body.id});
     const item = await db.collection('Cart').findOne({id:req.params.id});
-    console.log({item});
     if(item){
     const cart = await db.collection('Cart').deleteOne(item);
-    console.log(cart);
     res.json({
         statuscode : 200,
         message : "Item deleted from cart"
